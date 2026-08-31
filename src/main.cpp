@@ -56,7 +56,7 @@ namespace EDA {
         }
 
         static WireState operator*(const WireState &other_wire, const WireState wire) {
-            if (isWireStateImg(wire), isWireStateImg(other_wire)) {
+            if (isWireStateImg(wire) || isWireStateImg(other_wire)) {
                 return WireState::X;
             }
 
