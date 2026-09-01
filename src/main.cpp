@@ -6,13 +6,12 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <optional>
 #include <unordered_map>
 #include <ranges>
 #include <algorithm>
 
 namespace EDA {
-    namespace Env {
+    namespace Core {
         class EDA_Environment;
         typedef int WireId;
         typedef int ModuleId;
@@ -253,9 +252,8 @@ namespace EDA {
              * Advances the environment one time step.
              */
             void advance() {
-                std::cout << std::endl << "Starting step" << this->currentState.currentTime << std::endl;
                 auto cached_update_queue = this->module_update_queue;
-                this->module_update_queue = std::vector<Module*>();
+                this->module_update_queue = std::vector<Module *>();
                 auto it = cached_update_queue.begin();
                 while (it != cached_update_queue.end()) {
                     Module *module = *it;
@@ -264,17 +262,20 @@ namespace EDA {
                         const auto module_type = getModuleTypeDef(module->typeId);
 
                         if (module_type == nullptr) {
-                            std::cerr << "Module id:" << module->module_id << " type is not defined."<<std::endl;
+                            std::cerr << "Module id:" << module->module_id << " type is not defined." << std::endl;
                             return;
                         }
+
+                        // std::cout << "Updating module:" << module->module_id << std::endl;
                         module_type->update(module, this);
                         cached_update_queue.erase(it);
-                    }else {
+                    } else {
                         ++it;
                     }
                 }
                 this->module_update_queue.reserve(cached_update_queue.size() + this->module_update_queue.size());
-                this->module_update_queue.insert(this->module_update_queue.end(),cached_update_queue.begin(), cached_update_queue.end());
+                this->module_update_queue.insert(this->module_update_queue.end(), cached_update_queue.begin(),
+                                                 cached_update_queue.end());
                 this->currentState.currentTime += 1;
             }
 
@@ -333,7 +334,7 @@ namespace EDA {
                 }
 
                 if (module->outputs[output_index] != 0) {
-                    std::wcerr << "Over writing output port";
+                    std::wcerr << "Over writing output port" <<std::endl;
                 }
 
                 module->outputs[output_index] = wire_id;
@@ -362,6 +363,7 @@ namespace EDA {
 
                 if (module->inputs[input_index] != 0) {
                     std::wcerr << "Over writing output port";
+                    return false;
                 }
 
                 module->inputs[input_index] = wire_id;
@@ -371,6 +373,29 @@ namespace EDA {
                 }
 
                 return true;
+            }
+
+            bool bind_module_to_module(const ModuleId outputting_module_id, const int output_port, const ModuleId inputting_module_id, const int input_port) {
+                const WireId newWireId = newWire();
+                if (!bind_module_output(outputting_module_id,output_port,newWireId)) {
+                    return false;
+                }
+                if (!bind_module_input(inputting_module_id,input_port,newWireId)) {
+                    return false;
+                }
+                return true;
+            }
+
+            int getCurrentTime() const {
+                return this->currentState.currentTime;
+            }
+
+            std::vector<Core::WireId> makeNWires(const int n) {
+                auto wireIds = std::vector<WireId>(n);
+                for (int i = 0; i < n; i++) {
+                    wireIds[i] = newWire();
+                }
+                return wireIds;
             }
 
         private:
@@ -390,7 +415,7 @@ namespace EDA {
 
 
     namespace Primitive_Modules {
-        class Inverter : public Env::ModuleTypeDef {
+        class Inverter : public Core::ModuleTypeDef {
         public:
             Inverter() {
                 this->type_id = -1;
@@ -399,13 +424,13 @@ namespace EDA {
                 this->name = "Inverter";
             }
 
-            void update(Env::Module *module, Env::EDA_Environment *env) override {
+            void update(Core::Module *module, Core::EDA_Environment *env) override {
                 switch (env->get_wire(module->inputs[0])->state) {
-                    case Env::WireState::LOW:
-                        env->setWire(module->outputs[0], Env::WireState::HIGH, module->module_id);
+                    case Core::WireState::LOW:
+                        env->setWire(module->outputs[0], Core::WireState::HIGH, module->module_id);
                         break;
-                    case Env::WireState::HIGH:
-                        env->setWire(module->outputs[0], Env::WireState::LOW, module->module_id);
+                    case Core::WireState::HIGH:
+                        env->setWire(module->outputs[0], Core::WireState::LOW, module->module_id);
                         break;
                     default:
                         break;
@@ -417,7 +442,7 @@ namespace EDA {
             }
         };
 
-        class And : public Env::ModuleTypeDef {
+        class And : public Core::ModuleTypeDef {
         public:
             And() {
                 this->type_id = -1;
@@ -426,9 +451,9 @@ namespace EDA {
                 this->name = "Inverter";
             }
 
-            void update(Env::Module *module, Env::EDA_Environment *env) override {
-                Env::WireState a = env->get_wire(module->inputs[0])->state;
-                Env::WireState b = env->get_wire(module->inputs[1])->state;
+            void update(Core::Module *module, Core::EDA_Environment *env) override {
+                Core::WireState a = env->get_wire(module->inputs[0])->state;
+                Core::WireState b = env->get_wire(module->inputs[1])->state;
                 env->setWire(module->outputs[0], a * b, module->module_id);
             }
 
@@ -437,7 +462,7 @@ namespace EDA {
             }
         };
 
-        class Log : public Env::ModuleTypeDef {
+        class Log : public Core::ModuleTypeDef {
         public:
             Log(const char *prefix) {
                 this->type_id = -1;
@@ -447,43 +472,99 @@ namespace EDA {
                 this->prefix = prefix;
             }
 
-            void update(Env::Module *module, Env::EDA_Environment *env) override {
-                std::cout << prefix << env->get_wire(module->inputs[0])->state;
+            void update(Core::Module *module, Core::EDA_Environment *env) override {
+                std::cout << prefix << env->get_wire(module->inputs[0])->state << " @ " << env->getCurrentTime() <<
+                        std::endl;
             }
 
             int inputUpdateDelay() override {
                 return 1;
             }
 
+            static Core::ModuleId attach_logger(Core::EDA_Environment* env, const Core::WireId wire_id, const char* prefix) {
+                const Core::ModuleId id = env->generateModule(env->addModuleTypeDef(new Log(prefix)));
+                env->bind_module_input(id, 0, wire_id);
+                return id;
+            }
+
         private:
             const char *prefix;
         };
     }
+
+    namespace Dynamics {
+        static Core::WireId ringOscillator(const int stages, Core::EDA_Environment *env) {
+            const Core::ModuleTypeId inverter_id = env->addModuleTypeDef(new Primitive_Modules::Inverter());
+
+            std::vector<Core::WireId> wires = env->makeNWires(stages);
+            auto modules = std::vector<Core::ModuleId>(stages);
+
+            for (int i = 0; i < stages; i++) {
+                modules[i] = env->generateModule(inverter_id);
+                env->bind_module_input(modules[i],0,wires[(i+stages-1) % stages]);
+                env->bind_module_output(modules[i],0,wires[i]);
+            }
+
+            return wires[stages-1];
+        }
+    }
+}
+
+static void constexpr manualRingOscillator(EDA::Core::EDA_Environment* env) {
+    using namespace EDA;
+
+    Primitive_Modules::Inverter inverterDef;
+    Primitive_Modules::And andDef;
+    auto loggerDef = Primitive_Modules::Log("Output:");
+    const Core::ModuleId not_type_id = env->addModuleTypeDef(&inverterDef);
+    const Core::ModuleId and_type_id = env->addModuleTypeDef(&andDef);
+    const Core::ModuleId out_log_type_id = env->addModuleTypeDef(&loggerDef);
+
+    const Core::WireId test_wire1_id = env->newWire();
+    const Core::WireId test_wire2_id = env->newWire();
+    const Core::WireId test_wire3_id = env->newWire();
+
+    const Core::ModuleId inverter1_id = env->generateModule(not_type_id);
+    const Core::ModuleId inverter2_id = env->generateModule(not_type_id);
+    const Core::ModuleId inverter3_id = env->generateModule(not_type_id);
+    const Core::ModuleId logger_id = env->generateModule(out_log_type_id);
+
+    env->bind_module_input(logger_id, 0, test_wire3_id);
+
+    env->bind_module_input(inverter1_id, 0, test_wire3_id);
+    env->bind_module_output(inverter1_id, 0, test_wire1_id);
+
+    env->bind_module_input(inverter2_id, 0, test_wire1_id);
+    env->bind_module_output(inverter2_id, 0, test_wire2_id);
+
+    env->bind_module_input(inverter3_id, 0, test_wire2_id);
+    env->bind_module_output(inverter3_id, 0, test_wire3_id);
 }
 
 int main() {
     using namespace EDA;
-    Env::EDA_Environment env;
-    Primitive_Modules::Inverter invertedDef;
+    Core::EDA_Environment env;
+
+    auto loggerDef = Primitive_Modules::Log("Output:");
     Primitive_Modules::And andDef;
-    Primitive_Modules::Log logger = Primitive_Modules::Log("Output:");
+    const Core::ModuleTypeId type_id = env.addModuleTypeDef(&andDef);
 
-    const Env::ModuleId not_type_id = env.addModuleTypeDef(&invertedDef);
-    const Env::ModuleId and_type_id = env.addModuleTypeDef(&andDef);
-    const Env::ModuleId out_log_type_id = env.addModuleTypeDef(&logger);
+    const Core::ModuleId and_module = env.generateModule(type_id);
 
-    const Env::WireId test_wire_id = env.newWire();
+    const Core::WireId osc1outId = Dynamics::ringOscillator(3, &env);
+    const Core::WireId osc2outId = Dynamics::ringOscillator(5, &env);
+    const Core::WireId andOut = env.newWire();
 
-    const Env::ModuleId inverter_id = env.generateModule(not_type_id);
-    const Env::ModuleId logger_id = env.generateModule(out_log_type_id);
+    env.bind_module_input(and_module, 0, osc1outId);
+    env.bind_module_input(and_module, 1, osc2outId);
+    env.bind_module_output(and_module, 0, andOut);
 
-    env.bind_module_input(logger_id, 0, test_wire_id);
-
-    env.bind_module_input(inverter_id, 0, test_wire_id);
-    env.bind_module_output(inverter_id, 0, test_wire_id);
+    Primitive_Modules::Log::attach_logger(&env, osc1outId, "Osc 1:");
+    Primitive_Modules::Log::attach_logger(&env, osc2outId, "Osc 2:");
+    Primitive_Modules::Log::attach_logger(&env, andOut, "And:");
 
     env.start();
-    env.advance(5);
+    env.advance(50);
 
     return EXIT_SUCCESS;
 }
