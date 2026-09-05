@@ -217,7 +217,6 @@ namespace Sim::Core {
                     return;
                 }
 
-                // std::cout << "Updating module:" << module->module_id << std::endl;
                 module_type->update(module, this);
                 cached_update_queue.erase(it);
             } else {
@@ -237,7 +236,7 @@ namespace Sim::Core {
      */
     ModuleId EDA_Environment::newModule(const ModuleTypeId typeId) {
         if (this->currentState.running) {
-            std::cerr << "Attempted to generate module while running" << std::endl;
+            std::cerr << "Attempted to create module while running" << std::endl;
             return -1;
         }
         const auto it = deviceDef_map.find(typeId);
@@ -264,17 +263,18 @@ namespace Sim::Core {
         return wire_map[wire_id];
     }
 
+    bool EDA_Environment::set_module_prefix(ModuleId id, const std::string *prefix) {
+        this->module_prefixes.insert(*prefix);
+        getModule(id)->prefix = &*this->module_prefixes.find(*prefix);
+
+        return true;
+    }
+
     bool EDA_Environment::bind_module_output(const ModuleId id, const int output_index, const WireId wire_id) {
         auto module = getModule(id);
-        auto wire = get_wire(wire_id);
 
         if (module == nullptr) {
             std::cerr << "Module doesn't exists" << std::endl;
-            return false;
-        }
-
-        if (wire == nullptr) {
-            std::cerr << "Wire doesn't exists" << std::endl;
             return false;
         }
 

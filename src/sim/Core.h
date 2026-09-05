@@ -7,6 +7,7 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace Sim::Core {
     typedef int WireId;
@@ -38,7 +39,7 @@ namespace Sim::Core {
         ModuleId module_id{}; // Module Unique Id
         std::vector<WireId> inputs; // Ids of each input
         std::vector<WireId> outputs; // Ids of each output
-        std::string* prefix;
+        const std::string* prefix;
         int next_update{}; // The time step of the update
         ModuleTypeId typeId{}; //
     };
@@ -95,6 +96,15 @@ namespace Sim::Core {
 
         Wire *get_wire(WireId wire_id);
 
+        /**
+         * Sets the prefix of a module.
+         * Copying the prefix to EDA_Environment::module_prefixes if not already there.
+         * @param id The module to assign the prefix of
+         * @param prefix the prefix to assign
+         * @return if this succeeded
+         */
+        bool set_module_prefix(ModuleId id, const std::string* prefix);
+
         bool bind_module_output(ModuleId id, int output_index, WireId wire_id);
 
         bool bind_module_input(ModuleId module_id, int input_index, WireId wire_id);
@@ -137,6 +147,8 @@ namespace Sim::Core {
         int next_moduletype_id_ = 2000;
         std::unordered_map<int, ModuleTypeDef *> deviceDef_map;
         std::vector<Module *> module_update_queue;
+
+        std::pmr::unordered_set<std::string> module_prefixes;
     };
 
     /**
