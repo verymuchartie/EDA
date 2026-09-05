@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <ranges>
 #include <algorithm>
+#include <format>
 
 namespace Sim::Core {
     inline  bool isWireStateReal(const WireState state) {
@@ -85,7 +86,7 @@ namespace Sim::Core {
 
         if (std::ranges::contains(module.inputs, 0) != 0) {
             std::cerr << "Device id: " << module.typeId << std::endl <<
-                    "Has a undefined input";
+                    "Has a undefined input" << std::endl;
             return false;
         }
 
@@ -108,7 +109,7 @@ namespace Sim::Core {
         if (const auto module = this->deviceDef_map.find(id); module != this->deviceDef_map.end()) {
             return module->second;
         }
-        std::cout << "Couldn't find type" << std::endl;
+        std::cerr << "Couldn't find module type" << std::endl << std::format("Module Type Id of {}", id) << std::endl<< std::endl;
         return nullptr;
     }
 
@@ -241,7 +242,7 @@ namespace Sim::Core {
         }
         const auto it = deviceDef_map.find(typeId);
         if (it == deviceDef_map.end()) {
-            std::cerr << "Device Type Id:" << typeId << " Not defined";
+            throw std::invalid_argument(std::format("Could not find module type id:{}", typeId));
         }
         const ModuleTypeDef *type_def = it->second;
         const ModuleId module_id = this->next_module_id;

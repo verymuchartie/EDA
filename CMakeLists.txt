@@ -13,4 +13,6 @@ add_executable(EDA
         src/sim/Primitive_Modules.h
         src/sim/Primitive_Modules.cpp
         src/sim/Dynamics.cpp
-        src/sim/Dynamics.h)
+        src/sim/Dynamics.h
+        src/sim/Composite_Module.cpp
+        src/sim/Composite_Module.h)

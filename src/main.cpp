@@ -6,6 +6,7 @@
 #include "sim/Primitive_Modules.h"
 #include <cmath>
 
+#include "sim/Composite_Module.h"
 #include "sim/Dynamics.h"
 
 static void manualRingOscillator(Sim::Core::EDA_Environment *env) {
@@ -61,11 +62,48 @@ static void dualingRingOsc(Sim::Core::EDA_Environment* env) {
     Primitive_Modules::Log::attach_logger(env, andOut, "And:");
 }
 
+
+static void compositeModuleTest(Sim::Core::EDA_Environment *env) {
+    using namespace Sim;
+
+    Core::ModuleTypeDef* inverterDef = Primitive_Modules::inverterTypeDef();
+    Core::ModuleTypeDef* andDef = Primitive_Modules::andTypeDef();
+    auto* loggerDef = new Primitive_Modules::Log("Output:");
+
+    auto composite_module = new Core::Composite::Composite_Module();
+
+    const Core::Composite::Submodule_Id not_type_id = env->addModuleTypeDef(inverterDef);
+    const Core::Composite::Submodule_Id out_log_type_id = env->addModuleTypeDef(loggerDef);
+
+    const Core::Composite::Composite_WireId test_wire1_id = composite_module->new_wire();
+    const Core::Composite::Composite_WireId test_wire2_id = composite_module->new_wire();
+    const Core::Composite::Composite_WireId test_wire3_id = composite_module->new_wire();
+
+    const Core::Composite::Submodule_Id inverter1_id = composite_module->new_module(not_type_id);
+    const Core::Composite::Submodule_Id inverter2_id = composite_module->new_module(not_type_id);
+    const Core::Composite::Submodule_Id inverter3_id = composite_module->new_module(not_type_id);
+    const Core::Composite::Submodule_Id logger_id = composite_module->new_module(out_log_type_id);
+
+    composite_module->bind_composite_module_input(logger_id, 0, test_wire3_id);
+
+    composite_module->bind_composite_module_input(inverter1_id, 0, test_wire3_id);
+    composite_module->bind_composite_module_output(inverter1_id, 0, test_wire1_id);
+
+    composite_module->bind_composite_module_input(inverter2_id, 0, test_wire1_id);
+    composite_module->bind_composite_module_output(inverter2_id, 0, test_wire2_id);
+
+    composite_module->bind_composite_module_input(inverter3_id, 0, test_wire2_id);
+    composite_module->bind_composite_module_output(inverter3_id, 0, test_wire3_id);
+
+    composite_module->generate_instance(env);
+    composite_module->generate_instance(env);
+}
+
 int main() {
     using namespace Sim;
     Core::EDA_Environment env;
 
-   manualRingOscillator(&env);
+    compositeModuleTest(&env);
 
     env.start();
     env.advance(50);
