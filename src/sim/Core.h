@@ -38,6 +38,7 @@ namespace Sim::Core {
         ModuleId module_id{}; // Module Unique Id
         std::vector<WireId> inputs; // Ids of each input
         std::vector<WireId> outputs; // Ids of each output
+        std::string* prefix;
         int next_update{}; // The time step of the update
         ModuleTypeId typeId{}; //
     };
@@ -77,11 +78,29 @@ namespace Sim::Core {
 
         int addModuleTypeDef(ModuleTypeDef *module);
 
-        std::vector<WireId> makeNWires(int n);
         WireId newWire();
+
+        std::vector<WireId> newWires(int n);
+
+        /**
+         * Creates a blank module instance of the given type.
+         * @param typeId  Type id to generate a module of
+         * @return id of the generated module
+         */
+        ModuleId newModule(ModuleTypeId typeId);
 
         bool setWire(WireId targetWire, WireState newState, ModuleId setter);
 
+        Module *getModule(ModuleId module_id);
+
+        Wire *get_wire(WireId wire_id);
+
+        bool bind_module_output(ModuleId id, int output_index, WireId wire_id);
+
+        bool bind_module_input(ModuleId module_id, int input_index, WireId wire_id);
+
+        bool bind_module_to_module(ModuleId outputting_module_id, int output_port,
+                                   ModuleId inputting_module_id, int input_port);
         /**
              * Configure the simulation to start running.
              * @return If the simulation successfully passed verification checks.
@@ -103,27 +122,8 @@ namespace Sim::Core {
          */
         void advance(int dt);
 
-
-        Module *getModule(ModuleId module_id);
-
-        Wire *get_wire(WireId wire_id);
-
-        bool bind_module_output(ModuleId id, int output_index, WireId wire_id);
-
-        bool bind_module_input(ModuleId module_id, int input_index, WireId wire_id);
-
-        bool bind_module_to_module(ModuleId outputting_module_id, int output_port,
-                                   ModuleId inputting_module_id, int input_port);
         [[nodiscard]]
         int getCurrentTime() const;
-
-
-        /**
-         * Creates a blank module instance of the given type.
-         * @param typeId  Type id to generate a module of
-         * @return id of the generated module
-         */
-        ModuleId generateModule(ModuleTypeId typeId);
 
     private:
         SimState currentState{.currentTime = 0, .running = false};

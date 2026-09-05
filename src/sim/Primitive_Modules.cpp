@@ -90,7 +90,7 @@ namespace Sim::Primitive_Modules {
 
     Core::ModuleId Log::attach_logger(Core::EDA_Environment *env, const Core::WireId wire_id,
                                         const char *prefix) {
-        const Core::ModuleId id = env->generateModule(env->addModuleTypeDef(new Log(prefix)));
+        const Core::ModuleId id = env->newModule(env->addModuleTypeDef(new Log(prefix)));
         env->bind_module_input(id, 0, wire_id);
         return id;
     }

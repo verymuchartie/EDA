@@ -10,11 +10,11 @@ namespace Sim::Dynamics {
     Core::WireId ringOscillator(const int stages, Core::EDA_Environment *env) {
         const Core::ModuleTypeId inverter_id = env->addModuleTypeDef(Primitive_Modules::inverterTypeDef());
 
-        std::vector<Core::WireId> wires = env->makeNWires(stages);
+        std::vector<Core::WireId> wires = env->newWires(stages);
         auto modules = std::vector<Core::ModuleId>(stages);
 
         for (int i = 0; i < stages; i++) {
-            modules[i] = env->generateModule(inverter_id);
+            modules[i] = env->newModule(inverter_id);
             env->bind_module_input(modules[i], 0, wires[(i + stages - 1) % stages]);
             env->bind_module_output(modules[i], 0, wires[i]);
         }

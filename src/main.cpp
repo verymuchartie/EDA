@@ -23,10 +23,10 @@ static void manualRingOscillator(Sim::Core::EDA_Environment *env) {
     const Core::WireId test_wire2_id = env->newWire();
     const Core::WireId test_wire3_id = env->newWire();
 
-    const Core::ModuleId inverter1_id = env->generateModule(not_type_id);
-    const Core::ModuleId inverter2_id = env->generateModule(not_type_id);
-    const Core::ModuleId inverter3_id = env->generateModule(not_type_id);
-    const Core::ModuleId logger_id = env->generateModule(out_log_type_id);
+    const Core::ModuleId inverter1_id = env->newModule(not_type_id);
+    const Core::ModuleId inverter2_id = env->newModule(not_type_id);
+    const Core::ModuleId inverter3_id = env->newModule(not_type_id);
+    const Core::ModuleId logger_id = env->newModule(out_log_type_id);
 
     env->bind_module_input(logger_id, 0, test_wire3_id);
 
@@ -46,7 +46,7 @@ static void dualingRingOsc(Sim::Core::EDA_Environment* env) {
     auto andDef = Primitive_Modules::andTypeDef();
     const Core::ModuleTypeId and_type_id = env->addModuleTypeDef(andDef);
 
-    const Core::ModuleId and_module = env->generateModule(and_type_id);
+    const Core::ModuleId and_module = env->newModule(and_type_id);
 
     const Core::WireId osc1outId = Dynamics::ringOscillator(3, env);
     const Core::WireId osc2outId = Dynamics::ringOscillator(5, env);

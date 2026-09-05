@@ -234,7 +234,7 @@ namespace Sim::Core {
      * @param typeId  Type id to generate a module of
      * @return id of the generated module
      */
-    ModuleId EDA_Environment::generateModule(const ModuleTypeId typeId) {
+    ModuleId EDA_Environment::newModule(const ModuleTypeId typeId) {
         if (this->currentState.running) {
             std::cerr << "Attempted to generate module while running" << std::endl;
             return -1;
@@ -246,7 +246,7 @@ namespace Sim::Core {
         const ModuleTypeDef *type_def = it->second;
         const ModuleId module_id = this->next_module_id;
         auto new_module = Module(module_id, std::vector<WireId>(type_def->input_cnt),
-                                 std::vector<WireId>(type_def->output_cnt), 0, typeId);
+                                 std::vector<WireId>(type_def->output_cnt), new std::string, 0, typeId);
 
         this->module_map[module_id] = new_module;
         this->module_map[module_id].next_update = 0;
@@ -341,7 +341,7 @@ namespace Sim::Core {
         return this->currentState.currentTime;
     }
 
-    std::vector<WireId> EDA_Environment::makeNWires(const int n) {
+    std::vector<WireId> EDA_Environment::newWires(const int n) {
         auto wireIds = std::vector<WireId>(n);
         for (int i = 0; i < n; i++) {
             wireIds[i] = newWire();
